@@ -562,30 +562,150 @@ private:
           SetWindowLongPtrW(hwnd, GWLP_USERDATA, 0);
           w->on_window_destroyed();
           break;
-        case WM_GETMINMAXINFO: {
-          auto lpmmi = (LPMINMAXINFO)lp;
-          if (w->m_maxsz.x > 0 && w->m_maxsz.y > 0) {
-            lpmmi->ptMaxSize = w->m_maxsz;
-            lpmmi->ptMaxTrackSize = w->m_maxsz;
-          }
-          if (w->m_minsz.x > 0 && w->m_minsz.y > 0) {
-            lpmmi->ptMinTrackSize = w->m_minsz;
-          }
-        } break;
-        case 0x02E4 /*WM_GETDPISCALEDSIZE*/: {
-          auto dpi = static_cast<int>(wp);
-          auto *size{reinterpret_cast<SIZE *>(lp)};
-          *size = w->get_scaled_size(w->m_dpi, dpi);
-          return TRUE;
-        }
         case 0x02E0 /*WM_DPICHANGED*/: {
-          // Windows 10: The size we get here is exactly what we supplied to WM_GETDPISCALEDSIZE.
-          // Windows 11: The size we get here is NOT what we supplied to WM_GETDPISCALEDSIZE.
-          // Due to this difference, don't use the suggested bounds.
-          auto dpi = static_cast<int>(HIWORD(wp));
-          w->on_dpi_changed(dpi);
-          break;
+          // Even if we let Windows handle the window scaling,
+          // we still need to help the WebView with its content scaling
+          if (w->m_controller && w->m_webview) {
+            // Force WebView to recalculate its layout
+            w->resize_widget();
+            w->resize_webview();
+          }
+          return DefWindowProcW(hwnd, msg, wp, lp);
         }
+        // case WM_GETMINMAXINFO: {
+        //   auto lpmmi = (LPMINMAXINFO)lp;
+          
+        //   // Get the current DPI for this window dynamically
+        //   UINT currentDpi = GetDpiForWindow(hwnd);
+          
+        //   // Scale minimum and maximum sizes based on the current DPI
+        //   if (w->m_maxsz.x > 0 && w->m_maxsz.y > 0) {
+        //     // Scale max size based on current DPI vs. default DPI
+        //     double scaleFactor = static_cast<double>(currentDpi) / 96.0; // 96 is the default DPI
+            
+        //     // Create scaled constraints
+        //     POINT scaledMaxSize = {
+        //       static_cast<LONG>(w->m_maxsz.x * scaleFactor),
+        //       static_cast<LONG>(w->m_maxsz.y * scaleFactor)
+        //     };
+            
+        //     lpmmi->ptMaxSize = scaledMaxSize;
+        //     lpmmi->ptMaxTrackSize = scaledMaxSize;
+        //   }
+          
+        //   if (w->m_minsz.x > 0 && w->m_minsz.y > 0) {
+        //     // Scale min size based on current DPI vs. default DPI
+        //     double scaleFactor = static_cast<double>(currentDpi) / 96.0;
+            
+        //     // Create scaled constraints
+        //     POINT scaledMinSize = {
+        //       static_cast<LONG>(w->m_minsz.x * scaleFactor),
+        //       static_cast<LONG>(w->m_minsz.y * scaleFactor)
+        //     };
+            
+        //     lpmmi->ptMinTrackSize = scaledMinSize;
+        //   }
+        // } break;
+        // case WM_GETMINMAXINFO: {
+        //   auto lpmmi = (LPMINMAXINFO)lp;
+          
+        //   // Scale minimum and maximum sizes based on the current DPI
+        //   if (w->m_maxsz.x > 0 && w->m_maxsz.y > 0) {
+        //     // Scale max size based on current DPI vs. default DPI
+        //     double scaleFactor = static_cast<double>(w->m_dpi) / 96.0; // 96 is the default DPI
+            
+        //     // Create scaled constraints
+        //     POINT scaledMaxSize = {
+        //       static_cast<LONG>(w->m_maxsz.x * scaleFactor),
+        //       static_cast<LONG>(w->m_maxsz.y * scaleFactor)
+        //     };
+            
+        //     lpmmi->ptMaxSize = scaledMaxSize;
+        //     lpmmi->ptMaxTrackSize = scaledMaxSize;
+        //   }
+          
+        //   if (w->m_minsz.x > 0 && w->m_minsz.y > 0) {
+        //     // Scale min size based on current DPI vs. default DPI
+        //     double scaleFactor = static_cast<double>(w->m_dpi) / 96.0;
+            
+        //     // Create scaled constraints
+        //     POINT scaledMinSize = {
+        //       static_cast<LONG>(w->m_minsz.x * scaleFactor),
+        //       static_cast<LONG>(w->m_minsz.y * scaleFactor)
+        //     };
+            
+        //     lpmmi->ptMinTrackSize = scaledMinSize;
+        //   }
+        // } break;
+        // case 0x02E4 /*WM_GETDPISCALEDSIZE*/: {
+        //   auto dpi = static_cast<int>(wp);
+        //   auto *size{reinterpret_cast<SIZE *>(lp)};
+        //   *size = w->get_scaled_size(w->m_dpi, dpi);
+        //   return TRUE;
+        // }
+        // case 0x02E0 /*WM_DPICHANGED*/: {
+        //   // Windows 10: The size we get here is exactly what we supplied to WM_GETDPISCALEDSIZE.
+        //   // Windows 11: The size we get here is NOT what we supplied to WM_GETDPISCALEDSIZE.
+        //   // Due to this difference, don't use the suggested bounds.
+        //   // auto dpi = static_cast<int>(HIWORD(wp));
+        //   // w->on_dpi_changed(dpi);
+        //   // break;
+
+        //   auto dpi = static_cast<int>(HIWORD(wp));
+        //   RECT* prcNewWindow = (RECT*)lp;
+          
+        //   // Store the original client size
+        //   RECT originalClientRect;
+        //   GetClientRect(hwnd, &originalClientRect);
+        //   int originalWidth = originalClientRect.right - originalClientRect.left;
+        //   int originalHeight = originalClientRect.bottom - originalClientRect.top;
+          
+        //   // Scale the client dimensions properly
+        //   double scaleFactor = static_cast<double>(dpi) / w->m_dpi;
+        //   int newWidth = static_cast<int>(originalWidth * scaleFactor);
+        //   int newHeight = static_cast<int>(originalHeight * scaleFactor);
+          
+        //   // Convert client size to window size (this accounts for title bar, borders, etc.)
+        //   RECT windowRect = {0, 0, newWidth, newHeight};
+
+        //   // Check if AdjustWindowRectExForDpi is available
+        //   typedef BOOL(WINAPI* AdjustWindowRectExForDpiFunc)(LPRECT, DWORD, BOOL, DWORD, UINT);
+        //   static AdjustWindowRectExForDpiFunc pAdjustWindowRectExForDpi = 
+        //     (AdjustWindowRectExForDpiFunc)GetProcAddress(
+        //       GetModuleHandle(TEXT("user32.dll")), 
+        //       "AdjustWindowRectExForDpi");
+
+        //   if (pAdjustWindowRectExForDpi) {
+        //     // Use the high-DPI aware version if available
+        //     pAdjustWindowRectExForDpi(
+        //       &windowRect, 
+        //       GetWindowLong(hwnd, GWL_STYLE), 
+        //       FALSE, 
+        //       GetWindowLong(hwnd, GWL_EXSTYLE), 
+        //       dpi);
+        //   } else {
+        //     // Fall back to the regular version for older Windows
+        //     AdjustWindowRectEx(
+        //       &windowRect, 
+        //       GetWindowLong(hwnd, GWL_STYLE), 
+        //       FALSE, 
+        //       GetWindowLong(hwnd, GWL_EXSTYLE));
+        //   }
+          
+        //   // Get the position from suggested rectangle but use our calculated size
+        //   SetWindowPos(hwnd, nullptr, 
+        //                prcNewWindow->left, prcNewWindow->top,
+        //                windowRect.right - windowRect.left, 
+        //                windowRect.bottom - windowRect.top,
+        //                SWP_NOZORDER | SWP_NOACTIVATE);
+          
+        //   // Update the stored DPI
+        //   w->m_dpi = dpi;
+          
+        //   // Force layout update
+        //   PostMessage(hwnd, WM_SIZE, 0, 0);
+        //   break;
+        // }
         case WM_SETTINGCHANGE: {
           auto *area = reinterpret_cast<const wchar_t *>(lp);
           if (area) {
@@ -823,6 +943,33 @@ private:
       }
     }
   }
+
+  // void resize_webview() {
+  //   if (m_widget && m_controller) {
+  //     RECT widgetBounds{};
+  //     GetClientRect(m_widget, &widgetBounds);
+      
+  //     RECT webviewBounds{};
+  //     m_controller->get_Bounds(&webviewBounds);
+      
+  //     int widgetW = widgetBounds.right - widgetBounds.left;
+  //     int widgetH = widgetBounds.bottom - widgetBounds.top;
+  //     int webviewW = webviewBounds.right - webviewBounds.left;
+  //     int webviewH = webviewBounds.bottom - webviewBounds.top;
+      
+  //     m_controller->put_Bounds(widgetBounds);
+      
+  //     // Check what WebView2 actually set
+  //     m_controller->get_Bounds(&webviewBounds);
+  //     int newWebviewW = webviewBounds.right - webviewBounds.left;
+  //     int newWebviewH = webviewBounds.bottom - webviewBounds.top;
+      
+  //     char title[512];
+  //     sprintf_s(title, "Widget:%dx%d WebView:%dx%d->%dx%d", 
+  //               widgetW, widgetH, webviewW, webviewH, newWebviewW, newWebviewH);
+  //     SetWindowTextA(m_window, title);
+  //   }
+  // }
 
   void focus_webview() {
     if (m_controller) {

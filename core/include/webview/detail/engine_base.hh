@@ -338,9 +338,9 @@ protected:
       return;
     };
     dispatch([this]() {
-      if (!m_is_size_set) {
+      // if (!m_is_size_set) {
         set_size(m_initial_width, m_initial_height, WEBVIEW_HINT_NONE);
-      }
+      // }
     });
   }
 
