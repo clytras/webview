@@ -41,6 +41,20 @@
 #include <string>
 
 namespace webview {
+
+// A hook the embedding app may set before it creates a webview. It's called on the UI thread with
+// the platform's native object just before the browser view is created or loaded, so the app can
+// configure what can only be set then:
+// - macOS: the WKWebViewConfiguration* the WKWebView is created with (a WKURLSchemeHandler, the
+//   website data store, ...);
+// - Linux: the WebKitWebView*, created and not loaded yet;
+// - Windows: not called (the WebView2 environment is created inside the library).
+using configure_hook_t = std::function<void(void *native)>;
+inline configure_hook_t &configure_hook() {
+  static configure_hook_t hook;
+  return hook;
+}
+
 namespace detail {
 
 class engine_base {

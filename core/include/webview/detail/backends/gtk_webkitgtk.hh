@@ -291,6 +291,9 @@ private:
     // Initialize webview widget
     m_webview = webkit_web_view_new();
     g_object_ref_sink(m_webview);
+    if (auto &hook = configure_hook()) {
+      hook(m_webview);
+    }
     WebKitUserContentManager *manager = m_user_content_manager =
         webkit_web_view_get_user_content_manager(WEBKIT_WEB_VIEW(m_webview));
     webkitgtk_compat::connect_script_message_received(

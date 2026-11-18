@@ -481,6 +481,9 @@ private:
 #error __has_builtin not supported by compiler
 #endif
 
+    if (auto &hook = configure_hook()) {
+      hook(static_cast<void *>(config));
+    }
     auto ui_delegate = create_webkit_ui_delegate();
     m_webview =
         objc::retain(WKWebView_withFrame(CGRectMake(0, 0, 0, 0), config));
