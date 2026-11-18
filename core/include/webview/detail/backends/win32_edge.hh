@@ -450,6 +450,11 @@ protected:
   noresult eval_impl(const std::string &js) override {
     // TODO: Skip if no content has begun loading yet. Can't check with
     //       ICoreWebView2::get_Source because it returns "about:blank".
+    // The destructor runs the dispatch queue after the browser is released: a script queued
+    // then (a binding's late reply) has nowhere to go
+    if (!m_webview) {
+      return {};
+    }
     auto wjs = widen_string(js);
     m_webview->ExecuteScript(wjs.c_str(), nullptr);
     return {};
